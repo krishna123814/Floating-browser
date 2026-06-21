@@ -17,11 +17,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Android SDK
+      - name: Setup Gradle
+        run: |
+          wget https://services.gradle.org/distributions/gradle-8.1.1-bin.zip
+          unzip gradle-8.1.1-bin.zip
+          export PATH=$PATH:$PWD/gradle-8.1.1/bin
+          gradle --version
+
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build APK without gradlew
+      - name: Build APK
         run: |
+          export PATH=$PATH:$PWD/gradle-8.1.1/bin
           gradle assembleDebug
 
       - name: Upload APK
