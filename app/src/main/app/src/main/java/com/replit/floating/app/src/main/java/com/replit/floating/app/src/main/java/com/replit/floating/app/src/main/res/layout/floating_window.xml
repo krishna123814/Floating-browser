@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <FrameLayout
+        android:id="@+id/layout_full_window"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#131722">
+
+        <WebView
+            android:id="@+id/webview_replit"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:id="@+id/left_panel"
+            android:layout_width="32dp"
+            android:layout_height="match_parent"
+            android:background="#00000000"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:layout_gravity="left">
+
+            <TextView android:id="@+id/btn_close"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="✖"
+                android:textColor="#F44336"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:padding="5dp" />
+
+            <TextView android:id="@+id/btn_drag"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="✥"
+                android:textColor="#2196F3"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:padding="5dp" />
+
+            <TextView android:id="@+id/btn_back"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="←"
+                android:textColor="#4CAF50"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="5dp" />
+
+            <TextView android:id="@+id/btn_refresh"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="↻"
+                android:textColor="#03A9F4"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="5dp" />
+
+            <TextView android:id="@+id/btn_maximize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⛶"
+                android:textColor="#9C27B0"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="5dp" />
+
+            <TextView android:id="@+id/btn_minimize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="➖"
+                android:textColor="#FFEB3B"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="5dp" />
+
+            <TextView android:id="@+id/btn_settings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⚙"
+                android:textColor="#FF9800"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:padding="5dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+        </LinearLayout>
+
+        <TextView android:id="@+id/btn_resize_corner"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_gravity="bottom|right"
+            android:text="◢"
+            android:textColor="#99FFFFFF"
+            android:textSize="18sp"
+            android:gravity="bottom|right"
+            android:paddingRight="6dp"
+            android:paddingBottom="6dp" />
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/layout_bubble"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/bubble_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="🦁"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/layout_settings"
+        android:layout_width="260dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="#E61E1E1E"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Super Controls"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="12dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Default App URL (Saves for next time)"
+            android:textColor="#AAAAAA"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <EditText
+                android:id="@+id/input_url"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="35dp"
+                android:background="#FFFFFF"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:singleLine="true"
+                android:hint="Enter Custom URL"/>
+
+            <android.widget.Button
+                android:id="@+id/btn_save_url"
+                android:layout_width="55dp"
+                android:layout_height="35dp"
+                android:layout_marginLeft="5dp"
+                android:text="GO"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:background="#4CAF50"
+                android:textColor="#FFFFFF"/>
+
+        </LinearLayout>
+
+        <android.widget.Button
+            android:id="@+id/btn_add_tab"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:text="+ Open New Independent Tab"
+            android:textSize="11sp"
+            android:background="#FF9800"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="12dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Icons Top/Bottom Distance"
+            android:textColor="#AAAAAA"
+            android:textSize="11sp" />
+
+        <SeekBar
+            android:id="@+id/seekbar_distance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:max="150"
+            android:progress="8"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Icons Size"
+            android:textColor="#AAAAAA"
+            android:textSize="11sp" />
+
+        <SeekBar
+            android:id="@+id/seekbar_size"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:max="15"
+            android:progress="3"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ghost Bubble Visibility"
+            android:textColor="#AAAAAA"
+            android:textSize="11sp" />
+
+        <SeekBar
+            android:id="@+id/seekbar_opacity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:max="100"
+            android:progress="40"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Icons Color Theme"
+            android:textColor="#AAAAAA"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+
+            <View android:id="@+id/color_white"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:background="#FFFFFF"
+                android:layout_margin="4dp"/>
+
+            <View android:id="@+id/color_red"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:background="#FF5555"
+                android:layout_margin="4dp"/>
+
+            <View android:id="@+id/color_green"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:background="#4CAF50"
+                android:layout_margin="4dp"/>
+
+            <View android:id="@+id/color_blue"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:background="#2196F3"
+                android:layout_margin="4dp"/>
+
+            <View android:id="@+id/color_yellow"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:background="#FFEB3B"
+                android:layout_margin="4dp"/>
+
+        </LinearLayout>
+
+        <android.widget.Button
+            android:id="@+id/btn_close_settings"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:text="Close Settings"
+            android:textSize="11sp"
+            android:background="#333333"
+            android:textColor="#FFFFFF"/>
+
+    </LinearLayout>
+
+</FrameLayout>
