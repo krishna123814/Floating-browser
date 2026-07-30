@@ -59,6 +59,8 @@ def load_tasks(worksheet):
 def save_tasks(worksheet, df):
     worksheet.clear()
     out = df.copy()
+    if "_date_obj" in out.columns:
+        out = out.drop(columns=["_date_obj"])
     out["done"] = out["done"].astype(str)
     rows = [out.columns.tolist()] + out.values.tolist()
     worksheet.update(rows)
