@@ -85,6 +85,33 @@ def save_practice(worksheet, df):
     worksheet.update(rows)
 
 
+TARGETS_SHEET_NAME = "PracticeTargets"
+TARGET_COLUMNS = ["total_target_days", "per_day_target"]
+DEFAULT_TOTAL_TARGET_DAYS = 7
+DEFAULT_PER_DAY_TARGET = 27
+
+
+def load_targets(worksheet):
+    records = worksheet.get_all_records()
+    if not records:
+        return DEFAULT_TOTAL_TARGET_DAYS, DEFAULT_PER_DAY_TARGET
+    row = records[0]
+    try:
+        total_target_days = int(row.get("total_target_days") or DEFAULT_TOTAL_TARGET_DAYS)
+    except (TypeError, ValueError):
+        total_target_days = DEFAULT_TOTAL_TARGET_DAYS
+    try:
+        per_day_target = int(row.get("per_day_target") or DEFAULT_PER_DAY_TARGET)
+    except (TypeError, ValueError):
+        per_day_target = DEFAULT_PER_DAY_TARGET
+    return total_target_days, per_day_target
+
+
+def save_targets(worksheet, total_target_days, per_day_target):
+    worksheet.clear()
+    worksheet.update([TARGET_COLUMNS, [total_target_days, per_day_target]])
+
+
 # ----------------------------------------------------------------------
 # SETTINGS (kept in session for this browser session)
 # ----------------------------------------------------------------------
@@ -108,7 +135,7 @@ if "practice_icon_color" not in st.session_state:
 if "settings_icon_color" not in st.session_state:
     st.session_state.settings_icon_color = "#9598a1"
 
-FONT_SIZES = {"Small": "14px", "Medium": "16px", "Large": "19px"}
+FONT_SIZES = {"Extra Small": "12px", "Small": "14px", "Medium": "16px", "Large": "19px"}
 ICON_SIZES = {"Small": 40, "Medium": 52, "Large": 66}
 TOPBAR_HEIGHTS = {"Small": 28, "Medium": 34, "Large": 42}       # header button height, px
 TOPBAR_ICON_SIZES = {"Small": 12, "Medium": 15, "Large": 18}    # header icon font-size, px
@@ -303,6 +330,45 @@ st.markdown(
         margin-bottom: 10px;
         box-shadow: 0 1px 3px rgba(20,30,40,.12);
     }}
+    /* Tap-anywhere-on-the-card to open its edit/delete panel — an
+       invisible full-size button sits on top of the visual card.
+       [class*=...] matches every row's own unique key (task_wrap_<id>,
+       practice_wrap_<id>) with one static rule. */
+    div[class*="st-key-task_wrap_"],
+    div[class*="st-key-practice_wrap_"] {{
+        position: relative !important;
+    }}
+    div[class*="st-key-task_wrap_"] .task-card,
+    div[class*="st-key-practice_wrap_"] .task-card {{
+        margin-bottom: 0;
+    }}
+    div[class*="st-key-task_wrap_"] div[data-testid="stButton"],
+    div[class*="st-key-practice_wrap_"] div[data-testid="stButton"] {{
+        position: absolute !important;
+        inset: 0 !important;
+        z-index: 5;
+        margin: 0 !important;
+    }}
+    div[class*="st-key-task_wrap_"] div[data-testid="stButton"] button,
+    div[class*="st-key-practice_wrap_"] div[data-testid="stButton"] button {{
+        width: 100% !important;
+        height: 100% !important;
+        min-height: unset !important;
+        opacity: 0 !important;
+        cursor: pointer;
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }}
+    div[class*="st-key-task_edit_"],
+    div[class*="st-key-practice_edit_"] {{
+        background: {theme['card']};
+        border-radius: 14px;
+        padding: 10px 14px 2px;
+        margin: -6px 0 10px;
+        box-shadow: 0 1px 3px rgba(20,30,40,.12);
+    }}
     .task-title {{
         font-size: 1.1em;
         font-weight: 600;
@@ -388,13 +454,21 @@ try:
     tasks_df = load_tasks(tasks_ws)
     practice_ws = get_worksheet(sh, PRACTICE_SHEET_NAME, create_if_missing=True, header=PRACTICE_COLUMNS)
     practice_df = load_practice(practice_ws)
+    targets_ws = get_worksheet(sh, TARGETS_SHEET_NAME, create_if_missing=True, header=TARGET_COLUMNS)
+    loaded_total_target_days, loaded_per_day_target = load_targets(targets_ws)
     connected = True
 except Exception as e:
     connected = False
-    tasks_ws = practice_ws = None
+    tasks_ws = practice_ws = targets_ws = None
     tasks_df = EMPTY_DF.copy()
     practice_df = EMPTY_PRACTICE_DF.copy()
+    loaded_total_target_days, loaded_per_day_target = DEFAULT_TOTAL_TARGET_DAYS, DEFAULT_PER_DAY_TARGET
     st.error(f"Google Sheet se connect nahi ho paya: {e}")
+
+if "practice_total_target_days" not in st.session_state:
+    st.session_state.practice_total_target_days = loaded_total_target_days
+if "practice_per_day_target" not in st.session_state:
+    st.session_state.practice_per_day_target = loaded_per_day_target
 
 # ----------------------------------------------------------------------
 # TOP BAR — one persistent fixed row: Tasks | Practice | Gear | ...spacer... | dot
@@ -572,8 +646,9 @@ def render_task(row):
     label = f"{fmt_label(d)}, {row['time']}" if row.get("time") else fmt_label(d)
     cls = color_class(d, row["done"])
     title_cls = "task-title done" if row["done"] else "task-title"
+    is_editing = st.session_state.get("task_edit_open") == row["id"]
 
-    c1, c2, c3 = st.columns([0.5, 6, 0.7])
+    c1, c2 = st.columns([0.5, 6.7])
     with c1:
         checked = st.checkbox("", value=bool(row["done"]), key=f"{prefix}_chk_{row['id']}")
         if checked != bool(row["done"]):
@@ -582,22 +657,140 @@ def render_task(row):
                 save_tasks(active_ws, active_df)
             st.rerun()
     with c2:
-        st.markdown(
-            f"""<div class="task-card">
-                <div class="{title_cls}">{row['name']}</div>
-                <div class="{cls}">{label}</div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
-    with c3:
-        if st.button("🗑️", key=f"{prefix}_del_{row['id']}"):
-            active_df.drop(active_df[active_df["id"] == row["id"]].index, inplace=True)
-            if connected:
-                save_tasks(active_ws, active_df)
-            st.rerun()
+        with st.container(key=f"task_wrap_{row['id']}"):
+            st.markdown(
+                f"""<div class="task-card">
+                    <div class="{title_cls}">{row['name']}</div>
+                    <div class="{cls}">{label}</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+            if st.button("", key=f"{prefix}_open_{row['id']}"):
+                st.session_state["task_edit_open"] = None if is_editing else row["id"]
+                st.rerun()
+
+        if is_editing:
+            with st.container(key=f"task_edit_{row['id']}"):
+                with st.form(f"edit_form_{prefix}_{row['id']}"):
+                    new_name = st.text_input(f"{active_label} name", value=row["name"])
+                    ec1, ec2 = st.columns(2)
+                    with ec1:
+                        new_date = st.date_input("Date", value=d)
+                    with ec2:
+                        try:
+                            t_val = datetime.strptime(str(row["time"]), "%H:%M").time()
+                        except Exception:
+                            t_val = datetime.now().time()
+                        new_time = st.time_input("Time", value=t_val)
+                    fc1, fc2, fc3 = st.columns(3)
+                    with fc1:
+                        save_clicked = st.form_submit_button("💾 Save")
+                    with fc2:
+                        delete_clicked = st.form_submit_button("🗑️ Delete")
+                    with fc3:
+                        cancel_clicked = st.form_submit_button("✕ Cancel")
+
+                    if save_clicked:
+                        if not new_name.strip():
+                            st.warning("Naam daalna zaroori hai.")
+                        else:
+                            active_df.loc[active_df["id"] == row["id"], "name"] = new_name.strip()
+                            active_df.loc[active_df["id"] == row["id"], "date"] = new_date.strftime("%Y-%m-%d")
+                            active_df.loc[active_df["id"] == row["id"], "time"] = new_time.strftime("%H:%M")
+                            if connected:
+                                save_tasks(active_ws, active_df)
+                            st.session_state["task_edit_open"] = None
+                            st.success(f"{active_label} update ho gaya ✅")
+                            st.rerun()
+                    if delete_clicked:
+                        active_df.drop(active_df[active_df["id"] == row["id"]].index, inplace=True)
+                        if connected:
+                            save_tasks(active_ws, active_df)
+                        st.session_state["task_edit_open"] = None
+                        st.rerun()
+                    if cancel_clicked:
+                        st.session_state["task_edit_open"] = None
+                        st.rerun()
 
 
 if prefix == "practice":
+    # ── Targets: Total target (days) × Per day target (chart-din) ──
+    with st.popover("🎯 Target set karo"):
+        t_col1, t_col2 = st.columns(2)
+        with t_col1:
+            new_total_target = st.number_input(
+                "Total target (days)", min_value=1, step=1,
+                value=int(st.session_state.practice_total_target_days),
+            )
+        with t_col2:
+            new_per_day_target = st.number_input(
+                "Per day target (chart-din)", min_value=1, step=1,
+                value=int(st.session_state.practice_per_day_target),
+            )
+        st.caption(f"Total target = {int(new_total_target)} × {int(new_per_day_target)} = **{int(new_total_target) * int(new_per_day_target)} din**")
+        if st.button("💾 Target save karo", key="save_practice_targets"):
+            st.session_state.practice_total_target_days = int(new_total_target)
+            st.session_state.practice_per_day_target = int(new_per_day_target)
+            if connected:
+                save_targets(targets_ws, int(new_total_target), int(new_per_day_target))
+            st.success("Target save ho gaya ✅")
+            st.rerun()
+
+    total_target_days = st.session_state.practice_total_target_days
+    per_day_target = st.session_state.practice_per_day_target
+    overall_target = total_target_days * per_day_target
+
+    if not active_df.empty:
+        _entry_days = (
+            active_df["chart_end_date"].apply(parse_date) - active_df["chart_start_date"].apply(parse_date)
+        ).apply(lambda td: td.days)
+        achieved_days = int(_entry_days.sum())
+    else:
+        achieved_days = 0
+    progress_pct = min(1.0, achieved_days / overall_target) if overall_target else 0.0
+
+    # streak: consecutive most-recent calendar days that hit the per-day target
+    streak = 0
+    if not active_df.empty:
+        g = active_df.copy()
+        g["_sd"] = g["start_date"].apply(parse_date)
+        g["_days"] = (
+            g["chart_end_date"].apply(parse_date) - g["chart_start_date"].apply(parse_date)
+        ).apply(lambda td: td.days)
+        daily_totals = g.groupby("_sd")["_days"].sum()
+        dates_desc = sorted(daily_totals.index, reverse=True)
+        if dates_desc:
+            expected = dates_desc[0]
+            for dt in dates_desc:
+                if dt == expected and daily_totals[dt] >= per_day_target:
+                    streak += 1
+                    expected = dt - timedelta(days=1)
+                else:
+                    break
+
+    st.markdown(
+        f"""<div class="task-card">
+            <div class="practice-row">
+                <div class="practice-field"><span class="practice-label">Total target</span>{overall_target} din ({total_target_days}×{per_day_target})</div>
+                <div class="practice-field"><span class="practice-label">Achieved</span>{achieved_days} din</div>
+                <div class="practice-field"><span class="practice-label">Streak</span>🔥 {streak} din</div>
+            </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+    st.progress(progress_pct)
+
+    if not active_df.empty:
+        _chart_df = active_df.copy()
+        _chart_df["_sd"] = _chart_df["start_date"].apply(parse_date)
+        _chart_df["_days"] = (
+            _chart_df["chart_end_date"].apply(parse_date) - _chart_df["chart_start_date"].apply(parse_date)
+        ).apply(lambda td: td.days)
+        daily_chart = _chart_df.groupby("_sd")["_days"].sum().sort_index()
+        daily_chart.index = daily_chart.index.map(lambda d: d.strftime("%d %b"))
+        daily_chart.name = "Din practice kiya"
+        st.bar_chart(daily_chart)
+
     if active_df.empty:
         st.info("Abhi koi practice record nahi hai. Neeche '➕' se add karo.")
     else:
@@ -607,9 +800,16 @@ if prefix == "practice":
         for _, row in df_sorted.iterrows():
             csd = parse_date(row["chart_start_date"])
             ced = parse_date(row["chart_end_date"])
+            sd_obj = parse_date(row["start_date"])
             total_days = (ced - csd).days
-            rc1, rc2 = st.columns([6, 0.7])
-            with rc1:
+            is_editing = st.session_state.get("practice_edit_open") == row["id"]
+            badge = (
+                '<span style="color:#2e9e44;font-weight:700;">✅ Target achieved</span>'
+                if total_days >= per_day_target
+                else '<span style="color:#d32f2f;font-weight:700;">— Target miss</span>'
+            )
+
+            with st.container(key=f"practice_wrap_{row['id']}"):
                 st.markdown(
                     f"""<div class="task-card">
                         <div class="practice-row">
@@ -617,16 +817,54 @@ if prefix == "practice":
                             <div class="practice-field"><span class="practice-label">Chart start</span>{row['chart_start_date']}</div>
                             <div class="practice-field"><span class="practice-label">Chart end</span>{row['chart_end_date']}</div>
                             <div class="practice-field"><span class="practice-label">Total practice</span>{total_days} din</div>
+                            <div class="practice-field"><span class="practice-label">Status</span>{badge}</div>
                         </div>
                     </div>""",
                     unsafe_allow_html=True,
                 )
-            with rc2:
-                if st.button("🗑️", key=f"practice_del_{row['id']}"):
-                    active_df.drop(active_df[active_df["id"] == row["id"]].index, inplace=True)
-                    if connected:
-                        save_practice(active_ws, active_df)
+                if st.button("", key=f"practice_open_{row['id']}"):
+                    st.session_state["practice_edit_open"] = None if is_editing else row["id"]
                     st.rerun()
+
+            if is_editing:
+                with st.container(key=f"practice_edit_{row['id']}"):
+                    with st.form(f"edit_form_practice_{row['id']}"):
+                        pec1, pec2, pec3 = st.columns(3)
+                        with pec1:
+                            new_sd = st.date_input("Start date", value=sd_obj)
+                        with pec2:
+                            new_csd = st.date_input("Chart start date", value=csd)
+                        with pec3:
+                            new_ced = st.date_input("Chart end date", value=ced)
+                        fc1, fc2, fc3 = st.columns(3)
+                        with fc1:
+                            save_clicked = st.form_submit_button("💾 Save")
+                        with fc2:
+                            delete_clicked = st.form_submit_button("🗑️ Delete")
+                        with fc3:
+                            cancel_clicked = st.form_submit_button("✕ Cancel")
+
+                        if save_clicked:
+                            if new_ced < new_csd:
+                                st.warning("Chart end date, chart start date se pehle nahi ho sakti.")
+                            else:
+                                active_df.loc[active_df["id"] == row["id"], "start_date"] = new_sd.strftime("%Y-%m-%d")
+                                active_df.loc[active_df["id"] == row["id"], "chart_start_date"] = new_csd.strftime("%Y-%m-%d")
+                                active_df.loc[active_df["id"] == row["id"], "chart_end_date"] = new_ced.strftime("%Y-%m-%d")
+                                if connected:
+                                    save_practice(active_ws, active_df)
+                                st.session_state["practice_edit_open"] = None
+                                st.success("Practice entry update ho gaya ✅")
+                                st.rerun()
+                        if delete_clicked:
+                            active_df.drop(active_df[active_df["id"] == row["id"]].index, inplace=True)
+                            if connected:
+                                save_practice(active_ws, active_df)
+                            st.session_state["practice_edit_open"] = None
+                            st.rerun()
+                        if cancel_clicked:
+                            st.session_state["practice_edit_open"] = None
+                            st.rerun()
 else:
     if active_df.empty:
         st.info(f"Abhi koi {active_label.lower()} nahi hai. Neeche '➕' se add karo.")
