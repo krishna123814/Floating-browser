@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
@@ -59,8 +60,6 @@ def load_tasks(worksheet):
 def save_tasks(worksheet, df):
     worksheet.clear()
     out = df.copy()
-    if "_date_obj" in out.columns:
-        out = out.drop(columns=["_date_obj"])
     out["done"] = out["done"].astype(str)
     rows = [out.columns.tolist()] + out.values.tolist()
     worksheet.update(rows)
@@ -75,8 +74,11 @@ if "font_size" not in st.session_state:
     st.session_state.font_size = "Medium"
 if "bg_theme" not in st.session_state:
     st.session_state.bg_theme = "Sky"
+if "icon_size" not in st.session_state:
+    st.session_state.icon_size = "Medium"
 
 FONT_SIZES = {"Small": "14px", "Medium": "16px", "Large": "19px"}
+ICON_SIZES = {"Small": 40, "Medium": 52, "Large": 66}
 THEMES = {
     "Sky":   {"bg": "#dff0fb", "card": "#ffffff", "text": "#26313a"},
     "Mint":  {"bg": "#e2f5ea", "card": "#ffffff", "text": "#26313a"},
@@ -87,13 +89,77 @@ THEMES = {
 
 theme = THEMES[st.session_state.bg_theme]
 font_px = FONT_SIZES[st.session_state.font_size]
+icon_px = ICON_SIZES[st.session_state.icon_size]
 
 st.markdown(
     f"""
     <style>
+    /* hide Streamlit's own header/menu/footer so more screen is usable */
+    #MainMenu {{visibility: hidden;}}
+    header {{visibility: hidden; height: 0;}}
+    footer {{visibility: hidden;}}
+
     .stApp {{
         background-color: {theme['bg']};
         font-size: {font_px};
+    }}
+
+    /* connection status dot, fixed top-right */
+    .status-dot {{
+        position: fixed;
+        top: 14px;
+        right: {icon_px + 20}px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        z-index: 1000;
+        box-shadow: 0 0 4px rgba(0,0,0,.35);
+    }}
+
+    /* settings gear, fixed top-right, round icon-only button */
+    div[data-testid="stPopover"] {{
+        position: fixed !important;
+        top: 8px;
+        right: 8px;
+        z-index: 1000;
+    }}
+    div[data-testid="stPopover"] > div > button {{
+        width: {icon_px}px !important;
+        height: {icon_px}px !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        font-size: {int(icon_px*0.45)}px !important;
+    }}
+
+    /* add-task, fixed bottom-left, round icon-only FAB */
+    div[data-testid="stExpander"] {{
+        position: fixed !important;
+        bottom: 18px;
+        left: 14px;
+        width: {icon_px}px !important;
+        z-index: 1000;
+    }}
+    div[data-testid="stExpander"] summary {{
+        width: {icon_px}px !important;
+        height: {icon_px}px !important;
+        border-radius: 50% !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: {int(icon_px*0.45)}px !important;
+        background: {theme['card']} !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,.3);
+    }}
+    div[data-testid="stExpander"] summary svg {{ display: none; }}
+    div[data-testid="stExpander"] div[data-testid="stExpanderDetails"] {{
+        position: fixed;
+        bottom: {icon_px + 34}px;
+        left: 14px;
+        width: min(320px, 90vw);
+        background: {theme['card']};
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 4px 16px rgba(0,0,0,.35);
     }}
     .task-card {{
         background: {theme['card']};
@@ -125,6 +191,30 @@ st.markdown(
 )
 
 # ----------------------------------------------------------------------
+# FULLSCREEN ON FIRST TAP (best-effort; works on Chrome Android)
+# ----------------------------------------------------------------------
+components.html(
+    """
+    <script>
+    (function() {
+        var topDoc = window.parent.document;
+        function goFullscreen() {
+            var el = topDoc.documentElement;
+            if (!topDoc.fullscreenElement && el.requestFullscreen) {
+                el.requestFullscreen().catch(function(){});
+            }
+            topDoc.removeEventListener('click', goFullscreen);
+            topDoc.removeEventListener('touchend', goFullscreen);
+        }
+        topDoc.addEventListener('click', goFullscreen, {once: true});
+        topDoc.addEventListener('touchend', goFullscreen, {once: true});
+    })();
+    </script>
+    """,
+    height=0,
+)
+
+# ----------------------------------------------------------------------
 # LOAD DATA
 # ----------------------------------------------------------------------
 try:
@@ -137,36 +227,36 @@ except Exception as e:
     st.error(f"Google Sheet se connect nahi ho paya: {e}")
 
 # ----------------------------------------------------------------------
-# HEADER
+# HEADER (icon-only, fixed top-right: status dot + settings gear)
 # ----------------------------------------------------------------------
-col1, col2 = st.columns([5, 1])
-with col1:
-    st.markdown("## 📋 Tasks")
-with col2:
-    with st.popover("⚙️"):
-        st.markdown("**Settings**")
-        st.session_state.week_start = st.selectbox(
-            "Week starts on", ["Sunday", "Monday"],
-            index=["Sunday", "Monday"].index(st.session_state.week_start),
-        )
-        st.session_state.font_size = st.selectbox(
-            "Text size", list(FONT_SIZES.keys()),
-            index=list(FONT_SIZES.keys()).index(st.session_state.font_size),
-        )
-        st.session_state.bg_theme = st.selectbox(
-            "Background", list(THEMES.keys()),
-            index=list(THEMES.keys()).index(st.session_state.bg_theme),
-        )
-        if st.button("Apply"):
-            st.rerun()
+dot_color = "#2e9e44" if connected else "#d32f2f"
+st.markdown(f'<div class="status-dot" style="background:{dot_color};"></div>', unsafe_allow_html=True)
 
-if connected:
-    st.caption("🟢 Connected to Google Sheet")
+with st.popover("⚙️"):
+    st.markdown("**Settings**")
+    st.session_state.week_start = st.selectbox(
+        "Week starts on", ["Sunday", "Monday"],
+        index=["Sunday", "Monday"].index(st.session_state.week_start),
+    )
+    st.session_state.font_size = st.selectbox(
+        "Text size", list(FONT_SIZES.keys()),
+        index=list(FONT_SIZES.keys()).index(st.session_state.font_size),
+    )
+    st.session_state.icon_size = st.selectbox(
+        "Icon size", list(ICON_SIZES.keys()),
+        index=list(ICON_SIZES.keys()).index(st.session_state.icon_size),
+    )
+    st.session_state.bg_theme = st.selectbox(
+        "Background", list(THEMES.keys()),
+        index=list(THEMES.keys()).index(st.session_state.bg_theme),
+    )
+    if st.button("Apply"):
+        st.rerun()
 
 # ----------------------------------------------------------------------
-# ADD TASK FORM
+# ADD TASK FORM (icon-only FAB, fixed bottom-left)
 # ----------------------------------------------------------------------
-with st.expander("➕ Add new task"):
+with st.expander("➕"):
     with st.form("add_task_form", clear_on_submit=True):
         name = st.text_input("Task name")
         c1, c2 = st.columns(2)
