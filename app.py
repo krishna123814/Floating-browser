@@ -96,9 +96,22 @@ if "bg_theme" not in st.session_state:
     st.session_state.bg_theme = "Sky"
 if "icon_size" not in st.session_state:
     st.session_state.icon_size = "Medium"
+# top header (dark toolbar strip) — size + per-icon colour, set from Settings
+if "topbar_height" not in st.session_state:
+    st.session_state.topbar_height = "Medium"
+if "topbar_icon_size" not in st.session_state:
+    st.session_state.topbar_icon_size = "Medium"
+if "task_icon_color" not in st.session_state:
+    st.session_state.task_icon_color = "#9598a1"
+if "practice_icon_color" not in st.session_state:
+    st.session_state.practice_icon_color = "#9598a1"
+if "settings_icon_color" not in st.session_state:
+    st.session_state.settings_icon_color = "#9598a1"
 
 FONT_SIZES = {"Small": "14px", "Medium": "16px", "Large": "19px"}
 ICON_SIZES = {"Small": 40, "Medium": 52, "Large": 66}
+TOPBAR_HEIGHTS = {"Small": 28, "Medium": 34, "Large": 42}       # header button height, px
+TOPBAR_ICON_SIZES = {"Small": 12, "Medium": 15, "Large": 18}    # header icon font-size, px
 THEMES = {
     "Sky":   {"bg": "#dff0fb", "card": "#ffffff", "text": "#26313a"},
     "Mint":  {"bg": "#e2f5ea", "card": "#ffffff", "text": "#26313a"},
@@ -110,6 +123,12 @@ THEMES = {
 theme = THEMES[st.session_state.bg_theme]
 font_px = FONT_SIZES[st.session_state.font_size]
 icon_px = ICON_SIZES[st.session_state.icon_size]
+bar_h = TOPBAR_HEIGHTS[st.session_state.topbar_height]
+bar_icon_px = TOPBAR_ICON_SIZES[st.session_state.topbar_icon_size]
+task_color = st.session_state.task_icon_color
+practice_color = st.session_state.practice_icon_color
+gear_color = st.session_state.settings_icon_color
+
 
 st.markdown(
     f"""
@@ -132,41 +151,102 @@ st.markdown(
         font-size: {font_px};
     }}
 
-    /* ── ONE persistent top bar (like the reference chart.html #hdr) ──
-       holds: Tasks tab, Practice tab, status dot, settings gear — always
-       visible together, no matter which tab is active. Targeted via a
-       stable container key (NOT :first-of-type, which also matched the
-       unrelated date/time row inside the add-form and broke it). ── */
+    /* ── ONE persistent top bar — dark compact toolbar strip, styled after
+       the reference chart.html #hdr (TradingView-style header): dark bg,
+       thin border, small squarish icon buttons in a row, status dot
+       tucked in the right corner. Targeted via a stable container key
+       (NOT :first-of-type, which also matched the unrelated date/time
+       row inside the add-form and broke it). ── */
     .st-key-topbar {{
         position: fixed !important;
         top: 0; left: 0; right: 0;
         z-index: 1000;
-        background: {theme['card']};
+        background: #1e222d;
+        border-bottom: 1px solid #2a2e39;
         padding: 6px 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.18);
+        box-shadow: 0 2px 8px rgba(0,0,0,.35);
     }}
     .st-key-topbar div[data-testid="stHorizontalBlock"] {{
         align-items: center !important;
+        gap: 6px !important;
+    }}
+    .st-key-topbar div[data-testid="column"] {{
+        width: fit-content !important;
+        flex: unset !important;
+        min-width: unset !important;
     }}
     .st-key-topbar button {{
         min-height: unset !important;
-        padding: 6px 4px !important;
+        height: {bar_h}px !important;
+        padding: 0 12px !important;
+        background: transparent !important;
+        border: 1px solid #363c4e !important;
+        border-radius: 6px !important;
+        color: #9598a1 !important;
+        font-size: {bar_icon_px}px !important;
+        white-space: nowrap !important;
+    }}
+    .st-key-topbar button:hover {{
+        border-color: #2962ff !important;
+        color: #d1d4dc !important;
+    }}
+    .st-key-topbar button[kind="primary"] {{
+        background: #2962ff !important;
+        border-color: #2962ff !important;
+        color: #fff !important;
     }}
     .st-key-topbar div[data-testid="stPopover"] > div > button {{
-        width: {int(icon_px*0.7)}px !important;
-        height: {int(icon_px*0.7)}px !important;
-        border-radius: 50% !important;
+        width: {bar_h}px !important;
+        height: {bar_h}px !important;
+        border-radius: 6px !important;
         padding: 0 !important;
-        font-size: {int(icon_px*0.32)}px !important;
+        font-size: {bar_icon_px}px !important;
+        background: transparent !important;
+        border: 1px solid #363c4e !important;
+        color: #9598a1 !important;
     }}
-    .topbar-spacer {{ height: {int(icon_px*0.7) + 18}px; }}
+    .st-key-topbar div[data-testid="stPopover"] > div > button:hover {{
+        border-color: #2962ff !important;
+        color: #d1d4dc !important;
+    }}
+    .topbar-spacer {{ height: {bar_h + 20}px; }}
 
-    /* connection status dot, sits inside the top bar */
+    /* per-icon colours, set from Settings — border+text when inactive,
+       solid fill when the tab is the active one (kind="primary") */
+    .st-key-tab_btn_tasks button {{
+        border-color: {task_color} !important;
+        color: {task_color} !important;
+    }}
+    .st-key-tab_btn_tasks button[kind="primary"] {{
+        background: {task_color} !important;
+        border-color: {task_color} !important;
+        color: #fff !important;
+    }}
+    .st-key-tab_btn_practice button {{
+        border-color: {practice_color} !important;
+        color: {practice_color} !important;
+    }}
+    .st-key-tab_btn_practice button[kind="primary"] {{
+        background: {practice_color} !important;
+        border-color: {practice_color} !important;
+        color: #fff !important;
+    }}
+    .st-key-settings_popover div[data-testid="stPopover"] > div > button {{
+        border-color: {gear_color} !important;
+        color: {gear_color} !important;
+    }}
+
+    /* connection status dot — tucked in the top-right corner, like #ws-dot */
+    .status-dot-wrap {{
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        height: {bar_h}px;
+    }}
     .status-dot {{
-        width: 11px;
-        height: 11px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
-        margin: 0 auto;
         box-shadow: 0 0 4px rgba(0,0,0,.35);
     }}
 
@@ -302,32 +382,30 @@ except Exception as e:
     st.error(f"Google Sheet se connect nahi ho paya: {e}")
 
 # ----------------------------------------------------------------------
-# TOP BAR — one persistent fixed row: Tasks | Practice | ...spacer... | dot | gear
+# TOP BAR — one persistent fixed row: Tasks | Practice | Gear | ...spacer... | dot
+# (dark toolbar strip, styled after the reference chart.html #hdr)
 # ----------------------------------------------------------------------
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "tasks"
 
-bar_c1, bar_c2, bar_spacer, bar_dot, bar_gear = st.container(key="topbar").columns([1, 1, 5, 0.6, 1])
+bar_c1, bar_c2, bar_gear, bar_spacer, bar_dot = st.container(key="topbar").columns([1, 1, 1, 6, 1])
 
 with bar_c1:
     if st.button(
-        "📋", key="tab_btn_tasks", use_container_width=True,
+        "📋", key="tab_btn_tasks",
         type="primary" if st.session_state.active_tab == "tasks" else "secondary",
     ):
         st.session_state.active_tab = "tasks"
         st.rerun()
 with bar_c2:
     if st.button(
-        "📈", key="tab_btn_practice", use_container_width=True,
+        "📈", key="tab_btn_practice",
         type="primary" if st.session_state.active_tab == "practice" else "secondary",
     ):
         st.session_state.active_tab = "practice"
         st.rerun()
-with bar_dot:
-    dot_color = "#2e9e44" if connected else "#d32f2f"
-    st.markdown(f'<div class="status-dot" style="background:{dot_color};"></div>', unsafe_allow_html=True)
 with bar_gear:
-    with st.popover("⚙️"):
+    with st.popover("⚙️", key="settings_popover"):
         st.markdown(
             '<div style="text-align:right; margin-top:-8px;">'
             '<span onclick="document.body.click()" '
@@ -344,13 +422,42 @@ with bar_gear:
             index=list(FONT_SIZES.keys()).index(st.session_state.font_size),
         )
         st.session_state.icon_size = st.selectbox(
-            "Icon size", list(ICON_SIZES.keys()),
+            "Icon size (add-task button)", list(ICON_SIZES.keys()),
             index=list(ICON_SIZES.keys()).index(st.session_state.icon_size),
         )
         st.session_state.bg_theme = st.selectbox(
             "Background", list(THEMES.keys()),
             index=list(THEMES.keys()).index(st.session_state.bg_theme),
         )
+
+        st.markdown("**Top header**")
+        st.session_state.topbar_height = st.selectbox(
+            "Header size", list(TOPBAR_HEIGHTS.keys()),
+            index=list(TOPBAR_HEIGHTS.keys()).index(st.session_state.topbar_height),
+        )
+        st.session_state.topbar_icon_size = st.selectbox(
+            "Header icon size", list(TOPBAR_ICON_SIZES.keys()),
+            index=list(TOPBAR_ICON_SIZES.keys()).index(st.session_state.topbar_icon_size),
+        )
+        cc1, cc2, cc3 = st.columns(3)
+        with cc1:
+            st.session_state.task_icon_color = st.color_picker(
+                "Task 📋", st.session_state.task_icon_color,
+            )
+        with cc2:
+            st.session_state.practice_icon_color = st.color_picker(
+                "Practice 📈", st.session_state.practice_icon_color,
+            )
+        with cc3:
+            st.session_state.settings_icon_color = st.color_picker(
+                "Settings ⚙️", st.session_state.settings_icon_color,
+            )
+with bar_dot:
+    dot_color = "#26a69a" if connected else "#787b86"
+    st.markdown(
+        f'<div class="status-dot-wrap"><div class="status-dot" style="background:{dot_color};"></div></div>',
+        unsafe_allow_html=True,
+    )
 
 # spacer so page content isn't hidden behind the fixed top bar
 st.markdown('<div class="topbar-spacer"></div>', unsafe_allow_html=True)
