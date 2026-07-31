@@ -161,14 +161,22 @@ st.markdown(
         position: fixed !important;
         top: 0; left: 0; right: 0;
         z-index: 1000;
+        height: {bar_h + 12}px !important;
+        overflow: hidden !important;
         background: #1e222d;
         border-bottom: 1px solid #2a2e39;
         padding: 6px 10px;
         box-shadow: 0 2px 8px rgba(0,0,0,.35);
     }}
+    /* Streamlit auto-stacks st.columns vertically on narrow/mobile screens
+       (its own responsive media query) — force it to stay a single row. */
     .st-key-topbar div[data-testid="stHorizontalBlock"] {{
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
         align-items: center !important;
         gap: 6px !important;
+        width: 100% !important;
     }}
     .st-key-topbar div[data-testid="column"] {{
         width: fit-content !important;
