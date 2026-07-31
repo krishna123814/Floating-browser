@@ -134,21 +134,25 @@ st.markdown(
 
     /* ── ONE persistent top bar (like the reference chart.html #hdr) ──
        holds: Tasks tab, Practice tab, status dot, settings gear — always
-       visible together, no matter which tab is active ── */
-    div[data-testid="stHorizontalBlock"]:first-of-type {{
+       visible together, no matter which tab is active. Targeted via a
+       stable container key (NOT :first-of-type, which also matched the
+       unrelated date/time row inside the add-form and broke it). ── */
+    .st-key-topbar {{
         position: fixed !important;
         top: 0; left: 0; right: 0;
         z-index: 1000;
         background: {theme['card']};
         padding: 6px 10px;
         box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    }}
+    .st-key-topbar div[data-testid="stHorizontalBlock"] {{
         align-items: center !important;
     }}
-    div[data-testid="stHorizontalBlock"]:first-of-type button {{
+    .st-key-topbar button {{
         min-height: unset !important;
         padding: 6px 4px !important;
     }}
-    div[data-testid="stHorizontalBlock"]:first-of-type div[data-testid="stPopover"] > div > button {{
+    .st-key-topbar div[data-testid="stPopover"] > div > button {{
         width: {int(icon_px*0.7)}px !important;
         height: {int(icon_px*0.7)}px !important;
         border-radius: 50% !important;
@@ -303,7 +307,7 @@ except Exception as e:
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "tasks"
 
-bar_c1, bar_c2, bar_spacer, bar_dot, bar_gear = st.columns([1, 1, 5, 0.6, 1])
+bar_c1, bar_c2, bar_spacer, bar_dot, bar_gear = st.container(key="topbar").columns([1, 1, 5, 0.6, 1])
 
 with bar_c1:
     if st.button(
