@@ -178,10 +178,17 @@ st.markdown(
         gap: 6px !important;
         width: 100% !important;
     }}
-    .st-key-topbar div[data-testid="column"] {{
+    .st-key-topbar div[data-testid="column"],
+    .st-key-topbar div[data-testid="stColumn"] {{
         width: fit-content !important;
         flex: unset !important;
         min-width: unset !important;
+    }}
+    /* push the last column (status dot) to the far right corner, instead
+       of relying on a wide empty spacer column (which broke across
+       Streamlit versions that rename the column data-testid) */
+    .st-key-topbar div[data-testid="stHorizontalBlock"] > div:last-child {{
+        margin-left: auto !important;
     }}
     .st-key-topbar button {{
         min-height: unset !important;
@@ -396,7 +403,7 @@ except Exception as e:
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "tasks"
 
-bar_c1, bar_c2, bar_gear, bar_spacer, bar_dot = st.container(key="topbar").columns([1, 1, 1, 6, 1])
+bar_c1, bar_c2, bar_gear, bar_dot = st.container(key="topbar").columns([1, 1, 1, 1])
 
 with bar_c1:
     if st.button(
