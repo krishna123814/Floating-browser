@@ -1,0 +1,7 @@
+streamlit>=1.57
+requests
+fyers-apiv3
+gdown
+fastapi
+uvicorn[standard]
+yt-dlp[default]
